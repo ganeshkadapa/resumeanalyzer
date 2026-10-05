@@ -63,46 +63,31 @@ ROLES = {
     "Big Data Developer": ["pyspark", "python", "sql", "aws"]
 }
 
-# --- REAL Generative AI Chatbot Logic ---
-def get_chatbot_response(user_input, found_skills, api_key):
-    if not api_key:
-        return "⚠️ **Please enter your Gemini API Key in the sidebar to activate the AI Career Coach!**"
+# --- Rule-Based Chatbot Logic ---
+def get_chatbot_response(user_input, found_skills):
+    user_input = user_input.lower()
     
-    try:
-        genai.configure(api_key=api_key)
-        
-        # Auto-detect available models for this specific API key
-        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        
-        if not available_models:
-            return "⚠️ **Error:** Your API key does not have access to any text generation models."
-            
-        # Select the best available model
-        target_model = available_models[0] # Fallback to first available
-        for m in available_models:
-            if 'gemini-1.5-flash' in m:
-                target_model = m
-                break
-            elif 'gemini-1.0-pro' in m or 'gemini-pro' in m:
-                target_model = m
-                
-        model = genai.GenerativeModel(target_model)
-        
-        prompt = f"""
-        You are an expert AI Career Coach. 
-        The user has uploaded their resume and we extracted these core skills: {found_skills}.
-        
-        The user is asking: "{user_input}"
-        
-        Provide a helpful, encouraging, and highly specific response. 
-        If they ask for resources, suggest actual platforms (like Coursera, freeCodeCamp, Udemy, specific YouTube channels, or Kaggle). 
-        Use markdown formatting to make your answer easy to read.
-        """
-        
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        return f"⚠️ **Error communicating with Gemini AI:** {str(e)}"
+    if "data engineer" in user_input:
+        missing = set(ROLES["Data Engineer"]) - (found_skills or set())
+        if missing:
+            skills_str = ", ".join([s.title() for s in missing])
+            return f"To become a Data Engineer, you still need to focus on: **{skills_str}**.\n\nHere are some great resources:\n- **Python:** [Corey Schafer's Python Playlist](https://www.youtube.com/playlist?list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU)\n- **SQL:** [SQLTutorial.org](https://www.sqltutorial.org/) or Mode Analytics SQL Tutorial\n- **PySpark:** [DataBricks PySpark Guide](https://spark.apache.org/docs/latest/api/python/getting_started/index.html) or FreeCodeCamp YouTube\n- **AWS:** [AWS Skill Builder](https://skillbuilder.aws/) (Free Tier)"
+        else:
+            return "You already have the core skills for a Data Engineer! You should focus on building complex data pipeline projects and preparing for interviews. Check out resources like LeetCode for SQL and Python."
+    elif "python" in user_input:
+        return "For **Python**, I highly recommend:\n1. **YouTube:** Programming with Mosh or Corey Schafer\n2. **Websites:** [RealPython.com](https://realpython.com) or [FreeCodeCamp](https://www.freecodecamp.org/)\n3. **Practice:** HackerRank or LeetCode."
+    elif "sql" in user_input:
+        return "For **SQL**, check out:\n1. **Websites:** [SQLBolt](https://sqlbolt.com/) (Interactive) or [W3Schools](https://www.w3schools.com/sql/)\n2. **YouTube:** Joey Blue or Kudvenkat SQL Server tutorials\n3. **Practice:** StrataScratch (Great for Data roles)."
+    elif "pyspark" in user_input or "spark" in user_input:
+        return "For **PySpark**, check out:\n1. **YouTube:** Krish Naik's PySpark playlist or FreeCodeCamp's Apache Spark tutorial.\n2. **Documentation:** The official Apache Spark documentation is excellent for beginners."
+    elif "aws" in user_input or "cloud" in user_input:
+        return "For **AWS / Cloud**, check out:\n1. **YouTube:** Stephane Maarek (for certification prep) or freeCodeCamp's AWS Practitioner course.\n2. **Websites:** AWS Skill Builder (official and free) or A Cloud Guru."
+    elif "ai" in user_input or "machine learning" in user_input:
+        return "For **AI & Machine Learning**, I recommend:\n1. **Courses:** [Andrew Ng's Machine Learning Specialization](https://www.coursera.org/specializations/machine-learning) on Coursera.\n2. **YouTube:** [StatQuest with Josh Starmer](https://www.youtube.com/user/joshstarmer) or [Sentdex](https://www.youtube.com/user/sentdex) (for Python ML).\n3. **Websites:** [Kaggle](https://www.kaggle.com/) (for datasets and notebooks)."
+    elif "links" in user_input:
+        return "Here are the top learning links across all skills:\n- **Python:** [FreeCodeCamp Python](https://www.youtube.com/watch?v=rfscVS0vtbw) | [W3Schools Python](https://www.w3schools.com/python/)\n- **SQL:** [FreeCodeCamp SQL](https://www.youtube.com/watch?v=HXV3zeJZ1EQ) | [W3Schools SQL](https://www.w3schools.com/sql/)\n- **AI:** [StatQuest YouTube](https://www.youtube.com/user/joshstarmer) | [Coursera ML](https://www.coursera.org/specializations/machine-learning)\n- **AWS:** [FreeCodeCamp AWS](https://www.youtube.com/watch?v=SOTamWNgDKc)\n- **PySpark:** [FreeCodeCamp Spark](https://www.youtube.com/watch?v=_C8kWso4ne4)"
+    
+    return "That's a great question! Based on your profile, focusing on Python, SQL, and Cloud (AWS) is always a safe bet for Data/AI roles. If you want direct URLs, just ask me to **'provide links'**!"
 
 # --- Main App Helpers ---
 def extract_text_from_pdf(file):
@@ -193,18 +178,15 @@ else:
         st.rerun()
 
     st.sidebar.markdown("---")
-    st.sidebar.header("🤖 AI Settings")
-    api_key = st.sidebar.text_input("Gemini API Key", type="password", help="Paste your Google AI Studio key here to activate the chatbot.")
-
+    
     st.title("📄 AI-Powered Resume Analyzer & Career Coach")
-    st.markdown("Upload your resume to discover suitable roles, identify skills to improve, and chat with our **Generative AI** coach for personalized advice!")
+    st.markdown("Upload your resume to discover suitable roles, identify skills to improve, and chat with our **Rule-Based AI** coach for personalized advice!")
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
     if "found_skills" not in st.session_state:
         st.session_state.found_skills = set()
 
-    st.sidebar.markdown("---")
     st.sidebar.header("Upload Section")
     uploaded_file = st.sidebar.file_uploader("Upload Resume (PDF)", type=["pdf"])
 
@@ -244,8 +226,8 @@ else:
 
     # --- Chatbot UI ---
     st.markdown("---")
-    st.subheader("💬 Ask the Generative AI Career Coach")
-    st.write("Ask any career question! (e.g., *'I want to transition from Data Analyst to Data Engineer. What 3 projects should I build?'*)")
+    st.subheader("💬 Ask the Rule-Based AI Career Coach")
+    st.write("Ask any career question! (e.g., *'I am not suitable for Data Engineer, what skills should I learn?'*)")
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -257,8 +239,7 @@ else:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        with st.spinner("AI is thinking..."):
-            response = get_chatbot_response(prompt, st.session_state.found_skills, api_key)
+        response = get_chatbot_response(prompt, st.session_state.found_skills)
         
         with st.chat_message("assistant"):
             st.markdown(response)
