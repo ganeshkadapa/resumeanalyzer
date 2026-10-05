@@ -70,8 +70,8 @@ def get_chatbot_response(user_input, found_skills, api_key):
     
     try:
         genai.configure(api_key=api_key)
-        # Using gemini-1.5-flash as it is fast and free
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Using gemini-pro as it is widely available
+        model = genai.GenerativeModel('gemini-pro')
         
         prompt = f"""
         You are an expert AI Career Coach. 
