@@ -70,8 +70,23 @@ def get_chatbot_response(user_input, found_skills, api_key):
     
     try:
         genai.configure(api_key=api_key)
-        # Using gemini-pro as it is widely available
-        model = genai.GenerativeModel('gemini-pro')
+        
+        # Auto-detect available models for this specific API key
+        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        
+        if not available_models:
+            return "⚠️ **Error:** Your API key does not have access to any text generation models."
+            
+        # Select the best available model
+        target_model = available_models[0] # Fallback to first available
+        for m in available_models:
+            if 'gemini-1.5-flash' in m:
+                target_model = m
+                break
+            elif 'gemini-1.0-pro' in m or 'gemini-pro' in m:
+                target_model = m
+                
+        model = genai.GenerativeModel(target_model)
         
         prompt = f"""
         You are an expert AI Career Coach. 
