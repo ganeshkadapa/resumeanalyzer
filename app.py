@@ -1,12 +1,48 @@
 import streamlit as st
 import PyPDF2
 import re
+import sqlite3
+import hashlib
 
-# --- Hardcoded Users for Authentication ---
-USERS = {
-    "admin": "admin123",
-    "ganesh": "password"
-}
+# --- Database & Security Functions ---
+def make_hashes(password):
+    return hashlib.sha256(str.encode(password)).hexdigest()
+
+def check_hashes(password, hashed_text):
+    if make_hashes(password) == hashed_text:
+        return hashed_text
+    return False
+
+def init_db():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT)')
+    conn.commit()
+    return conn, c
+
+def create_user(username, password):
+    conn, c = init_db()
+    try:
+        c.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, make_hashes(password)))
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        # Username already exists (since username is PRIMARY KEY)
+        return False
+    finally:
+        conn.close()
+
+def login_user(username, password):
+    conn, c = init_db()
+    c.execute('SELECT password FROM users WHERE username = ?', (username,))
+    data = c.fetchone()
+    conn.close()
+    
+    if data:
+        hashed_password = data[0]
+        if check_hashes(password, hashed_password):
+            return True
+    return False
 
 # Initialize session state for authentication
 if "logged_in" not in st.session_state:
@@ -14,7 +50,10 @@ if "logged_in" not in st.session_state:
 if "username" not in st.session_state:
     st.session_state.username = ""
 
-# Define target skills and roles
+# Make sure DB is created when app starts
+init_db()
+
+# --- Resume Analyzer Constants ---
 TARGET_SKILLS = ["python", "pyspark", "sql", "aws", "ai", "machine learning", "deep learning", "cloud"]
 
 ROLES = {
@@ -85,25 +124,49 @@ def get_skills_to_improve(found_skills, role):
 st.set_page_config(page_title="Resume Analyzer Dashboard", page_icon="📄", layout="wide")
 
 # ==========================================
-# AUTHENTICATION LOGIC
+# AUTHENTICATION LOGIC (Login & Sign Up)
 # ==========================================
 if not st.session_state.logged_in:
-    st.title("🔒 Login to Dashboard")
-    st.markdown("Please enter your credentials to access the Resume Analyzer.")
+    st.title("🔒 Access Dashboard")
     
-    with st.form("login_form"):
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        submit_button = st.form_submit_button("Login")
-        
-        if submit_button:
-            if username in USERS and USERS[username] == password:
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.success("Logged in successfully!")
-                st.rerun()
-            else:
-                st.error("Invalid username or password.")
+    # Create two tabs for Login and Sign Up
+    tab1, tab2 = st.tabs(["Login", "Sign Up"])
+    
+    with tab1:
+        st.subheader("Login to your account")
+        with st.form("login_form"):
+            login_username = st.text_input("Username")
+            login_password = st.text_input("Password", type="password")
+            submit_login = st.form_submit_button("Login")
+            
+            if submit_login:
+                if login_user(login_username, login_password):
+                    st.session_state.logged_in = True
+                    st.session_state.username = login_username
+                    st.success("Logged in successfully!")
+                    st.rerun()
+                else:
+                    st.error("Invalid username or password.")
+                    
+    with tab2:
+        st.subheader("Create a new account")
+        with st.form("signup_form"):
+            new_username = st.text_input("Choose a Username")
+            new_password = st.text_input("Choose a Password", type="password")
+            confirm_password = st.text_input("Confirm Password", type="password")
+            submit_signup = st.form_submit_button("Sign Up")
+            
+            if submit_signup:
+                if new_password != confirm_password:
+                    st.error("Passwords do not match!")
+                elif len(new_username) < 3 or len(new_password) < 4:
+                    st.error("Username must be at least 3 characters and password at least 4 characters.")
+                else:
+                    success = create_user(new_username, new_password)
+                    if success:
+                        st.success("Account created successfully! You can now log in from the Login tab.")
+                    else:
+                        st.error(f"Username '{new_username}' is already taken. Please choose another one.")
                 
 else:
     # ==========================================
