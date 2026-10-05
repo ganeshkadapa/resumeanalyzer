@@ -36,10 +36,12 @@ def get_chatbot_response(user_input, found_skills=None):
     elif "aws" in user_input or "cloud" in user_input:
         return "For **AWS / Cloud**, check out:\n1. **YouTube:** Stephane Maarek (for certification prep) or freeCodeCamp's AWS Practitioner course.\n2. **Websites:** AWS Skill Builder (official and free) or A Cloud Guru."
     elif "ai" in user_input or "machine learning" in user_input:
-        return "For **AI & Machine Learning**, I recommend:\n1. **Courses:** Andrew Ng's Machine Learning Specialization on Coursera.\n2. **YouTube:** StatQuest with Josh Starmer or Sentdex (for Python ML).\n3. **Websites:** Kaggle (for datasets and notebooks)."
+        return "For **AI & Machine Learning**, I recommend:\n1. **Courses:** [Andrew Ng's Machine Learning Specialization](https://www.coursera.org/specializations/machine-learning) on Coursera.\n2. **YouTube:** [StatQuest with Josh Starmer](https://www.youtube.com/user/joshstarmer) or [Sentdex](https://www.youtube.com/user/sentdex) (for Python ML).\n3. **Websites:** [Kaggle](https://www.kaggle.com/) (for datasets and notebooks)."
+    elif "links" in user_input:
+        return "Here are the top learning links across all skills:\n- **Python:** [FreeCodeCamp Python](https://www.youtube.com/watch?v=rfscVS0vtbw) | [W3Schools Python](https://www.w3schools.com/python/)\n- **SQL:** [FreeCodeCamp SQL](https://www.youtube.com/watch?v=HXV3zeJZ1EQ) | [W3Schools SQL](https://www.w3schools.com/sql/)\n- **AI:** [StatQuest YouTube](https://www.youtube.com/user/joshstarmer) | [Coursera ML](https://www.coursera.org/specializations/machine-learning)\n- **AWS:** [FreeCodeCamp AWS](https://www.youtube.com/watch?v=SOTamWNgDKc)\n- **PySpark:** [FreeCodeCamp Spark](https://www.youtube.com/watch?v=_C8kWso4ne4)"
     
     # Generic fallback
-    return "That's a great question! Based on your profile, focusing on Python, SQL, and Cloud (AWS) is always a safe bet for Data/AI roles. Try searching on YouTube for 'FreeCodeCamp [Skill Name]' for high-quality, free tutorials!"
+    return "That's a great question! Based on your profile, focusing on Python, SQL, and Cloud (AWS) is always a safe bet for Data/AI roles. If you want direct URLs, just ask me to **'provide links'**!"
 
 # --- Main App ---
 def extract_text_from_pdf(file):
